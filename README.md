@@ -19,5 +19,5 @@ $ npm install
 
 Once biscuit tin is running
 
-$ node index.js
+$ node index.js [BEARER_TOKEN]
 ```

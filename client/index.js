@@ -1,9 +1,12 @@
 
-var noble = require('noble');
+var noble = require('noble'),
+    request = require('request');
 
 var RBL_SERVICE_UUID = "713D0000503E4C75BA943148F18D941E",
     RBL_CHAR_TX_UUID = "713D0002503E4C75BA943148F18D941E",
     RBL_CHAR_RX_UUID = "713D0003503E4C75BA943148F18D941E";
+
+var PP_BEARER_TOKEN = process.argv[2];
 
 function by_uuid(list, uuid) {
   var uuid = uuid.toLowerCase(),
@@ -24,8 +27,24 @@ function read_message(data) {
       };
     default:
       return {
-        message: 'unknown'
+        error: 'unknown'
       };
+  }
+}
+
+function report_message(data) {
+  var message = read_message(data);
+  message['_timestamp'] = (new Date()).toISOString();
+
+  console.log(message);
+
+  if (PP_BEARER_TOKEN && !message.error) {
+    request.post('https://www.performance.service.gov.uk/data/biscuits/tin-stats', {
+      auth: {
+        bearer: PP_BEARER_TOKEN
+      },
+      json: message
+    });
   }
 }
 
@@ -57,9 +76,7 @@ noble.on('discover', function(peripheral) {
                 console.log('Found.');
                 console.log('Configuring...');
 
-                tx.on('read', function(data) {
-                  console.log(read_message(data));
-                });
+                tx.on('read', report_message);
                 tx.notify(true);
                 console.log('Done.');
               }
